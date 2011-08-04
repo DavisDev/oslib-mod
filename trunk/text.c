@@ -405,26 +405,26 @@ OSL_FONT *oslLoadFont(OSL_FONTINFO *fi)
 	return f;
 }
 
-int updateIntraFontCharWidth(OSL_FONT *font, intraFont *intra) 
-{ 
-    if (!font || !intra) 
-        return 0; 
- 
-    font->charHeight = intra->texYSize; 
-    if (!font->charWidths){ 
-        font->charWidths = (u8*)malloc(256*sizeof(char)); 
-        if (!font->charWidths) 
-            return -1; 
-    } 
- 
-    int i = 0; 
-    char tchar[2] = ""; 
-    for (i=0; i<256; i++){ 
-        tchar[0] = i; 
-        font->charWidths[i] = (int)intraFontMeasureText(intra, tchar); 
-    } 
-    return 0; 
-} 
+int updateIntraFontCharWidth(OSL_FONT *font, intraFont *intra)
+{
+    if (!font || !intra)
+        return 0;
+
+    font->charHeight = intra->texYSize;
+    if (!font->charWidths){
+        font->charWidths = (u8*)malloc(256*sizeof(char));
+        if (!font->charWidths)
+            return -1;
+    }
+
+    int i = 0;
+    char tchar[2] = "";
+    for (i=0; i<256; i++){
+        tchar[0] = i;
+        font->charWidths[i] = (int)intraFontMeasureText(intra, tchar);
+    }
+    return 0;
+}
 
 OSL_FONT *oslLoadIntraFontFile(const char *filename, unsigned int options)		{
 	OSL_FONT *font = NULL;
@@ -440,9 +440,9 @@ OSL_FONT *oslLoadIntraFontFile(const char *filename, unsigned int options)		{
         font = NULL;
         oslHandleLoadNoFailError(filename);
     }else{
-        intraFontSetStyle(font->intra, 1.0f, 0xFFFFFFFF, 0xFF000000, INTRAFONT_ALIGN_LEFT);
-        font->charWidths = NULL; 
-        updateIntraFontCharWidth(font, font->intra); 
+        intraFontSetStyle(font->intra, 1.0f, 0xFFFFFFFF, 0xFF000000, 0.0f, INTRAFONT_ALIGN_LEFT);
+        font->charWidths = NULL;
+        updateIntraFontCharWidth(font, font->intra);
         font->charHeight = font->intra->texYSize;
     }
     return font;
@@ -456,7 +456,7 @@ void oslLoadAltIntraFontFile(OSL_FONT *font, const char *filename)		{
     {
         oslHandleLoadNoFailError(filename);
     }else{
-        intraFontSetStyle(alt, 1.0f, 0xFFFFFFFF, 0xFF000000, INTRAFONT_ALIGN_LEFT);
+        intraFontSetStyle(alt, 1.0f, 0xFFFFFFFF, 0xFF000000, 0.0f, INTRAFONT_ALIGN_LEFT);
 		if ( font->charHeight < alt->texYSize )
 			font->charHeight = alt->texYSize;
         intraFontSetAltFont(font->intra, alt);
@@ -475,7 +475,7 @@ OSL_FONT *oslLoadFontFile(const char *filename)		{
     char *bwfon = (char *)filename + (strlen(filename) - 6);			//<-- STAS: BWFON intrafont support
     if (!strncmp(start, ".pgf", 4)   || !strncmp(start, ".PGF", 4) ||
         !strncmp(bwfon, ".bwfon", 6) || !strncmp(bwfon, ".BWFON", 6)) {
-        font = oslLoadIntraFontFile(filename, intra_options);			
+        font = oslLoadIntraFontFile(filename, intra_options);
     }else{
         f = VirtualFileOpen((void*)filename, 0, VF_AUTO, VF_O_READ);
         if (f)			{
@@ -735,7 +735,7 @@ void oslDrawTextBoxByWords(int x0, int y0, int x1, int y1, const char *text, int
         while (*text2 != '\n' && *text2 != ' ' && *text2) {
             contaCaratteri++;
 			text2++;
-        } 
+        }
         if (contaCaratteri > 0 ) {
             strncpy( buffer, text, contaCaratteri);
 			x2 = oslGetStringWidth(buffer);
@@ -744,7 +744,7 @@ void oslDrawTextBoxByWords(int x0, int y0, int x1, int y1, const char *text, int
             	x = x0;
 				y += osl_curFont->charHeight;
 				if (y > y1) break;
-			
+
             }
             oslDrawString(x, y, buffer);
 			text+=contaCaratteri;
@@ -851,6 +851,55 @@ int oslGetStringWidth(const char *str)
 	return x;
 }
 
+int oslGetTextBoxByWordsHeight(int width, int maxHeight, const char *text, int format)
+{
+	char buffer[50];
+	int contaCaratteri;
+	unsigned char c;
+	int x,y, x2; //x2 => width della parola
+	x = 0;//x0;
+	y = 0;//y0;
+    const char *text2;
+    text2=text;
+    while(*text2)
+    {
+        memset(buffer,'\0',50);
+        //estrae una parola
+        contaCaratteri = 0;
+		x2 = 0;
+        while (*text2 != '\n' && *text2 != ' ' && *text2) {
+            contaCaratteri++;
+			text2++;
+        }
+        if (contaCaratteri > 0 ) {
+            strncpy( buffer, text, contaCaratteri);
+			x2 = oslGetStringWidth(buffer);
+			if ((x+x2)> width)
+            {
+            	x = width;
+				y += osl_curFont->charHeight;
+				if (y > maxHeight) break;
+
+            }
+ 			text+=contaCaratteri;
+			x += x2;
+        }
+        if (*text2 == ' ') {
+			c = *text;
+            x += osl_curFont->charWidths[c];
+			text2++; text++;
+        }
+        if (*text2 == '\n') {
+			x = width;
+			y += osl_curFont->charHeight;
+			if (y> maxHeight) break;
+			text2++; text++;
+        }
+    }
+
+	return y;
+}
+
 int oslGetTextBoxHeight(int width, int maxHeight, const char *text, int format)
 {
     if (!osl_curFont  ||  osl_curFont->fontType != OSL_FONT_OFT)	//<-- STAS: it would nice to check it here
@@ -900,7 +949,6 @@ newline:
 	return y;
 }
 
-
 int oslIntraFontInit(unsigned int options){
     intra_options = options;
     osl_intraInit = 1;
@@ -915,10 +963,10 @@ void oslIntraFontShutdown(){
 
 void oslIntraFontSetStyle(OSL_FONT *f, float size, unsigned int color, unsigned int shadowColor, unsigned int options){
     if (f->intra){
-        intraFontSetStyle(f->intra, size, color, shadowColor, options);
-        updateIntraFontCharWidth(f, f->intra); 
+        intraFontSetStyle(f->intra, size, color, shadowColor, 0.f, options);
+        updateIntraFontCharWidth(f, f->intra);
         if(f->intra->altFont)
-            intraFontSetStyle(f->intra->altFont, size, color, shadowColor, options);
+            intraFontSetStyle(f->intra->altFont, size, color, shadowColor, 0.f, options);
     }
 }
 
