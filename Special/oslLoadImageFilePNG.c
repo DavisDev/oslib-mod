@@ -23,7 +23,7 @@ OSL_IMAGE *oslLoadImageFilePNG(char *filename, int location, int pixelFormat)
 	//We only keep the location bits
 	int imgLocation = location & OSL_LOCATION_MASK;
 	int i;
-
+	
 	f = VirtualFileOpen((void*)filename, 0, VF_AUTO, VF_O_READ);
 	if (!f)
 		goto error;
@@ -33,9 +33,7 @@ OSL_IMAGE *oslLoadImageFilePNG(char *filename, int location, int pixelFormat)
 		goto error;
 	}
 
-	//if (png_check_sig(signature, nSigSize) == 0) // For libPNG < 1.4.4
-	if (png_sig_cmp(signature, 0, nSigSize) == 0)
-	{
+	if (png_check_sig(signature, nSigSize) == 0) {
 		goto error;
 	}
 

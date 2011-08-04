@@ -177,6 +177,9 @@ extern int oslGetStringWidth(const char *str);
 /** Returns the height (in pixels) which would take a text box drawn with #oslDrawTextBox. */
 extern int oslGetTextBoxHeight(int width, int maxHeight, const char *text, int format);
 
+/** Returns the height (in pixels) which would take a text box drawn with #oslDrawTextBoxByWords. */
+extern int oslGetTextBoxByWordsHeight(int width, int maxHeight, const char *text, int format);
+
 /** Console horizontal position (in pixels). Use #oslMoveTo to move the cursor. */
 extern int osl_consolePosX;
 /** Console vertical position (in pixels). */
